@@ -1,19 +1,14 @@
-# 📄 Streamlit Resume Parser
+# 📄 Streamlit Resume Parser with Database
 
-This is a resume parser built with Streamlit that extracts structured data from PDF/DOCX resumes and allows JSON download.
+A smart resume parser built with Streamlit that:
+- Parses PDF/DOCX resumes
+- Extracts structured data: Name, Email, Phone, Summary, Skills, etc.
+- Saves parsed data into a local SQLite database
+- Offers polished UI and downloadable JSON output
 
-## 🛠 Requirements
-- streamlit
-- spacy
-- docx2txt
-- PyPDF2
-- en_core_web_sm spaCy model
-
-## ▶️ Run the app locally
+## 🔧 Setup Instructions
 ```bash
 pip install -r requirements.txt
+python -m spacy download en_core_web_sm
 streamlit run streamlit_resume_parser.py
 ```
-
-## 🌐 Deploy on Streamlit Cloud
-Just push to GitHub and select `streamlit_resume_parser.py` as the entrypoint.
