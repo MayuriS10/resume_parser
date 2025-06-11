@@ -61,12 +61,19 @@ def extract_email(text):
     match = re.search(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,}", clean)
     return match.group() if match else None
 
-
-
 def extract_phone(text):
     text = text.replace('\n', ' ')
     match = re.search(r"(\+?\d[\d\s\-()]{9,})", text)
     return re.sub(r"[\s\-()]", "", match.group()) if match else None
+
+def extract_summary(text):
+    lines = re.split(r'\n|\r|\r\n', text)
+    summary = []
+    for i, line in enumerate(lines):
+        if "summary" in line.lower() or "about" in line.lower():
+            summary.extend(lines[i+1:i+4])  # up to 3 lines
+            break
+    return " ".join([s.strip() for s in summary if s.strip()])
     
 def extract_skills(text):
     skill_lines = extract_section(
