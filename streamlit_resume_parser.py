@@ -58,12 +58,8 @@ def extract_section(text, section_names, stop_names, max_lines=12):
 
 # Extractors
 def extract_email(text):
-    lines = re.split(r'\n|\r|\r\n', text)
-    for line in lines:
-        match = re.search(r"[\w\.-]+@[\w\.-]+\.\w{2,}", line.strip())
-        if match:
-            return match.group().strip()
-    return None
+    match = re.search(r"[\w\.-]+@[\w\.-]+\.\w+", text)
+    return match.group() if match else None
 
 def extract_phone(text):
     text = text.replace('\n', ' ')
@@ -87,33 +83,42 @@ def extract_skills(text):
     return sorted({s.strip() for s in skills if len(s.strip()) > 1})
 
 def extract_experience(text):
-    lines = extract_section(text, ["experience", "work history"], ["education", "certification", "projects"], max_lines=20)
+    lines = extract_section(text, ["experience", "work history"], ["education", "certification", "projects"], max_lines=25)
     experience = []
     current = {}
-    for i in range(len(lines)):
-        if "|" in lines[i]:
-            current["company_role"] = lines[i].strip()
-        elif re.search(r"\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b.*?\d{4}", lines[i]):
-            current["duration"] = lines[i].strip()
-        if "company_role" in current and "duration" in current:
+
+    for i in range(len(lines) - 1):
+        line = lines[i].strip()
+        next_line = lines[i + 1].strip()
+
+        if "|" in line and re.search(r"\d{4}", next_line):
+            current = {
+                "company_role": line,
+                "duration": next_line
+            }
             experience.append(current)
             current = {}
+
     return experience
 
+
 def extract_education(text):
-    lines = extract_section(text, ["education", "academic background"], ["experience", "certification", "skills"])
+    lines = extract_section(text, ["education", "academic background"], ["experience", "skills", "certification"], max_lines=12)
     education = []
+
     for i in range(len(lines) - 2):
-        degree = lines[i].strip()
-        institute = lines[i+1].strip()
-        duration = lines[i+2].strip() if re.search(r"\d{4}", lines[i+2]) else ""
-        if re.search(r"(B\.?Tech|M\.?Tech|MBA|BSc|MSc|Bachelor|Master|PhD)", degree, re.IGNORECASE):
+        if re.search(r"(MBA|B\.?Tech|M\.?Tech|BSc|MSc|Bachelor|Master|PhD)", lines[i], re.IGNORECASE):
+            degree = lines[i].strip()
+            institute = lines[i-1].strip() if i > 0 else ""
+            duration = lines[i+1].strip() if re.search(r"\d{4}", lines[i+1]) else ""
             education.append({
                 "degree": degree,
                 "institute": institute,
                 "duration": duration
             })
+
     return education
+
 
 def extract_certifications(text):
     return extract_section(text, ["certifications", "certification", "courses"], ["experience", "education", "projects"])
