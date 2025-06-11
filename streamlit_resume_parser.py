@@ -59,6 +59,7 @@ def extract_section(text, section_names, stop_names, max_lines=12):
 def extract_email(text):
     lines = re.split(r'\n|\r|\r\n', text)
     for line in lines:
+        line = line.strip()
         match = re.search(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,}", line)
         if match:
             return match.group()
@@ -84,10 +85,9 @@ def extract_summary(text):
             capture = True
             continue
         if capture:
-            if line.strip():
-                summary.append(line.strip())
+            summary.append(line.strip())
 
-    return " ".join(summary)
+    return " ".join([s for s in summary if s])
 
     
 def extract_skills(text):
