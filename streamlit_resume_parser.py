@@ -19,7 +19,6 @@ CREATE TABLE IF NOT EXISTS resumes (
     name TEXT,
     email TEXT,
     phone TEXT,
-    summary TEXT,
     skills TEXT,
     experience TEXT,
     education TEXT,
@@ -70,24 +69,6 @@ def extract_phone(text):
     text = text.replace('\n', ' ')
     match = re.search(r"(\+?\d[\d\s\-()]{9,})", text)
     return re.sub(r"[\s\-()]", "", match.group()) if match else None
-
-def extract_summary(text):
-    lines = re.split(r'\n|\r|\r\n', text)
-    summary = []
-    capture = False
-    stop_keywords = ["skills", "experience", "education", "certification", "projects"]
-
-    for line in lines:
-        if any(k in line.lower() for k in stop_keywords):
-            if capture:
-                break
-        if "summary" in line.lower() or "about" in line.lower():
-            capture = True
-            continue
-        if capture:
-            summary.append(line.strip())
-
-    return " ".join([s for s in summary if s])
 
     
 def extract_skills(text):
@@ -163,10 +144,10 @@ def extract_certifications(text):
 
 def save_to_db(data):
     c.execute("""
-    INSERT INTO resumes (name, email, phone, summary, skills, experience, education, certifications, created_at)
+    INSERT INTO resumes (name, email, phone, skills, experience, education, certifications, created_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
-        data["Name"], data["Email"], data["Phone"], data["Summary"],
+        data["Name"], data["Email"], data["Phone"],
         ", ".join(data["Skills"]),
         json.dumps(data["Experience"]),
         json.dumps(data["Education"]),
@@ -189,8 +170,7 @@ if uploaded_file:
     resume_data = {
         "Name": None,
         "Email": extract_email(text),
-        "Phone": extract_phone(text),
-        "Summary": extract_summary(text),
+        "Phone": extract_phone(text), 
         "Skills": extract_skills(text),
         "Experience": extract_experience(text),
         "Education": extract_education(text),
@@ -213,7 +193,6 @@ if uploaded_file:
         st.markdown(f"**✉️ Email:** {resume_data['Email']}")
         st.markdown(f"**📞 Phone:** {resume_data['Phone']}")
     with col2:
-        st.markdown(f"**📝 Summary:** {resume_data['Summary']}")
         st.markdown(f"**🛠 Skills:** {', '.join(resume_data['Skills'])}")
 
     with st.expander("📌 Experience"):
