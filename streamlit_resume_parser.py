@@ -36,8 +36,8 @@ def extract_text_from_pdf(file):
 def extract_text_from_docx(file):
     return docx2txt.process(file)
 
-# Helpers
-def extract_section(text, section_names, stop_names, max_lines=12):
+# Extract section block
+def extract_section(text, section_names, stop_names, max_lines=15):
     lines = re.split(r'\n|\r|\r\n', text)
     section_lines = []
     capture = False
@@ -54,7 +54,8 @@ def extract_section(text, section_names, stop_names, max_lines=12):
         if len(section_lines) >= max_lines:
             break
     return section_lines
-    
+
+# Field extractors
 def extract_email(text):
     lines = re.split(r'\n|\r|\r\n', text)
     for line in lines:
@@ -64,14 +65,11 @@ def extract_email(text):
             return match.group().strip().strip('|')
     return None
 
-
-
 def extract_phone(text):
     text = text.replace('\n', ' ')
     match = re.search(r"(\+?\d[\d\s\-()]{9,})", text)
     return re.sub(r"[\s\-()]", "", match.group()) if match else None
 
-    
 def extract_skills(text):
     skill_lines = extract_section(
         text,
@@ -81,27 +79,22 @@ def extract_skills(text):
     )
     skills = []
     for line in skill_lines:
-        # Remove time durations like '3+ years:', '1 year:', etc.
-        if re.search(r"\d+\s*\+?\s*(year|yr|yrs)", line.lower()):
+        if re.search(r"\d+\+?\s*(year|yr|yrs)", line.lower()):
             continue
-        parts = re.split(r"[•|,;–\-•\n\t]", line)
-        for part in parts:
-            part = part.strip()
-            if len(part) > 1 and not re.match(r"\d+\+?", part):
-                skills.append(part)
+        points = re.split(r"[•|,;–\-•\n\t]", line)
+        for point in points:
+            s = point.strip()
+            if len(s) > 1 and not re.match(r"\d+\+?", s):
+                skills.append(s)
     return sorted(set(skills))
-
-
 
 def extract_experience(text):
     lines = extract_section(text, ["experience", "work history"], ["education", "certification", "projects"], max_lines=25)
     experience = []
     current = {}
-
     for i in range(len(lines) - 1):
         line = lines[i].strip()
         next_line = lines[i + 1].strip()
-
         if "|" in line and re.search(r"\d{4}", next_line):
             current = {
                 "company_role": line,
@@ -109,14 +102,12 @@ def extract_experience(text):
             }
             experience.append(current)
             current = {}
-
     return experience
-
 
 def extract_education(text):
     lines = extract_section(text, ["education"], ["experience", "skills", "certification"], max_lines=15)
 
-    # Join broken lines like "INSTI" and "TUTE." → "INSTI TUTE."
+    # Merge broken lines like: SYMBIOSIS STATISTICAL INSTI \n TUTE.
     cleaned_lines = []
     i = 0
     while i < len(lines):
@@ -138,17 +129,17 @@ def extract_education(text):
             })
     return education
 
-
-
 def extract_certifications(text):
     return extract_section(text, ["certifications", "certification", "courses"], ["experience", "education", "projects"])
 
 def save_to_db(data):
     c.execute("""
     INSERT INTO resumes (name, email, phone, skills, experience, education, certifications, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     """, (
-        data["Name"], data["Email"], data["Phone"],
+        data["Name"],
+        data["Email"],
+        data["Phone"],
         ", ".join(data["Skills"]),
         json.dumps(data["Experience"]),
         json.dumps(data["Education"]),
@@ -171,13 +162,14 @@ if uploaded_file:
     resume_data = {
         "Name": None,
         "Email": extract_email(text),
-        "Phone": extract_phone(text), 
+        "Phone": extract_phone(text),
         "Skills": extract_skills(text),
         "Experience": extract_experience(text),
         "Education": extract_education(text),
         "Certifications": extract_certifications(text)
     }
 
+    # Extract Name (first PERSON entity)
     doc = nlp(text[:500])
     for ent in doc.ents:
         if ent.label_ == "PERSON":
