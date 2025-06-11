@@ -39,7 +39,8 @@ def extract_text_from_docx(file):
     return docx2txt.process(file)
 
 def extract_email(text):
-    match = re.search(r"[\w.+-]+@[\w-]+\.[a-z]{2,}", text)
+    text = text.replace('\n', ' ')
+    match = re.search(r"[\w.+-]+@[\w-]+\.[a-z]{2,}", text, re.IGNORECASE)
     return match.group() if match else None
 
 def extract_phone(text):
@@ -55,15 +56,20 @@ def extract_skills(text):
     return list({skill for skill in skills_list if skill.lower() in text.lower()})
 
 def extract_experience(text):
-    lines = text.split("\n")
-    return [line.strip() for line in lines if re.search(r"(\b\d{4}\b)", line)]
-
+    section = re.search(r"(experience|work history)[\s\S]{0,500}", text, re.IGNORECASE)
+    if section:
+        lines = section.group().split('\n')
+        return [line.strip() for line in lines if len(line.strip()) > 10]
+    return []
+    
 def extract_education(text):
-    lines = text.split("\n")
-    return [line.strip() for line in lines if re.search(r"(B\.Tech|M\.Tech|BSc|MSc|MBA|Bachelor|Master|PhD)", line, re.IGNORECASE)]
+    lines = text.split('\n')
+    return [line.strip() for line in lines if re.search(r"(B\.?Tech|M\.?Tech|MBA|Bachelor|Master|PhD).*?(University|College)?", line, re.IGNORECASE)]
 
 def extract_certifications(text):
-    return [line.strip() for line in text.split("\n") if "certificat" in line.lower() and len(line.strip()) > 10]
+    lines = text.split('\n')
+    return [line.strip() for line in lines if re.search(r"(certification|certified)", line, re.IGNORECASE) and len(line.strip()) > 10]
+
 
 def save_to_db(data):
     c.execute("""
