@@ -1,12 +1,17 @@
-# 📄 Streamlit Resume Parser with Database
+# 📄 Smart Resume Parser with Section-based Extraction
 
-A smart resume parser built with Streamlit that:
-- Parses PDF/DOCX resumes
-- Extracts structured data: Name, Email, Phone, Summary, Skills, etc.
-- Saves parsed data into a local SQLite database
-- Offers polished UI and downloadable JSON output
+This Streamlit app extracts structured resume data from:
+- 📌 Skills (under 'Skills' section only)
+- 📌 Experience (under 'Experience' section)
+- 📌 Education (under 'Education' section)
+- 📌 Certifications (under 'Certifications' section)
 
-## 🔧 Setup Instructions
+Also includes:
+- Email and phone cleanup
+- SQLite DB storage
+- JSON download
+
+## 🚀 To Run
 ```bash
 pip install -r requirements.txt
 python -m spacy download en_core_web_sm
