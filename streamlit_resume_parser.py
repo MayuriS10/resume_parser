@@ -10,7 +10,7 @@ from datetime import datetime
 # Load spaCy model
 nlp = spacy.load("en_core_web_sm")
 
-# Setup SQLite DB
+# Database setup
 conn = sqlite3.connect("resumes.db")
 c = conn.cursor()
 c.execute("""
@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS resumes (
 """)
 conn.commit()
 
+# File extraction
 def extract_text_from_pdf(file):
     reader = PyPDF2.PdfReader(file)
     return " ".join([page.extract_text() for page in reader.pages if page.extract_text()])
@@ -36,29 +37,25 @@ def extract_text_from_pdf(file):
 def extract_text_from_docx(file):
     return docx2txt.process(file)
 
+# Field extractors
 def extract_email(text):
-    clean_text = text.replace('\n', ' ').replace('\r', ' ')
-    clean_text = re.sub(r'\s+', '', clean_text)
-    match = re.search(r"[\w.+-]+@[\w-]+\.[a-z]{2,}", clean_text)
-    return match.group() if match else None
+    cleaned = re.sub(r'\s+', '', text.replace('\n', ' ').replace('\r', ' '))
+    matches = re.findall(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,}", cleaned)
+    return matches[0] if matches else None
 
 def extract_phone(text):
     text = text.replace('\n', ' ')
     match = re.search(r"(\+?\d[\d\s\-()]{9,})", text)
-    if match:
-        number = match.group()
-        number = re.sub(r"[\s\-()]", "", number)
-        return number
-    return None
+    return re.sub(r"[\s\-()]", "", match.group()) if match else None
 
 def extract_summary(text):
-    clean = re.sub(r'-\s+', '', text.replace('\r', ' ').replace('\n', ' '))
-    clean = re.sub(r'\s+', ' ', clean)
-    clean = re.sub(r'[^\x00-\x7F]+', ' ', clean)
-    match = re.search(r"(summary|about)[\s:\-]*([^.]{20,300})", clean, re.IGNORECASE)
-    return match.group(2).strip() if match else clean[:300].strip()
+    lines = re.split(r'\n|\r|\r\n', text)
+    for i, line in enumerate(lines):
+        if 'summary' in line.lower() or 'about' in line.lower():
+            return lines[i+1].strip() if i+1 < len(lines) else line.strip()
+    return ""
 
-def extract_section(text, section_names, stop_names, max_lines=8):
+def extract_section(text, section_names, stop_names, max_lines=12):
     lines = re.split(r'\n|\r|\r\n', text)
     section_lines = []
     capture = False
@@ -79,45 +76,44 @@ def extract_section(text, section_names, stop_names, max_lines=8):
     return section_lines
 
 def extract_skills(text):
-    skills_lines = extract_section(
-        text,
-        section_names=["skills", "technical skills", "core competencies"],
-        stop_names=["experience", "education", "certification"]
-    )
-    return sorted(list({s.strip("•- ") for line in skills_lines for s in re.split(r'[|,•]', line) if len(s.strip()) > 1}))
+    skill_lines = extract_section(text, ["skills", "technical skills"], ["experience", "education", "certification"])
+    return sorted({s.strip("•- ") for line in skill_lines for s in re.split(r'[|,•]', line) if s.strip()})
 
 def extract_experience(text):
-    return extract_section(
-        text,
-        section_names=["experience", "professional experience", "work history"],
-        stop_names=["education", "certification", "projects"]
-    )
-
-def extract_certifications(text):
-    return extract_section(
-        text,
-        section_names=["certifications", "certification", "courses", "licenses"],
-        stop_names=["experience", "education"]
-    )
+    lines = extract_section(text, ["experience", "work history"], ["education", "certification", "projects"], 20)
+    experience = []
+    current = {}
+    for line in lines:
+        if "|" in line:
+            current["company_role"] = line.strip()
+        elif re.search(r"(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec).*?\d{4}", line):
+            current["duration"] = line.strip()
+        if "company_role" in current and "duration" in current:
+            experience.append(current)
+            current = {}
+    return experience
 
 def extract_education(text):
-    lines = extract_section(
-        text,
-        section_names=["education", "academic background"],
-        stop_names=["experience", "certification", "skills"]
-    )
+    lines = extract_section(text, ["education", "academic background"], ["experience", "certification", "skills"])
     education = []
     for i in range(len(lines)):
         if re.search(r"(B\.?Tech|M\.?Tech|MBA|MSc|BSc|Bachelor|Master|PhD)", lines[i], re.IGNORECASE):
             degree = lines[i].strip()
-            institute = lines[i+1].strip() if i+1 < len(lines) else ""
-            duration = lines[i+2].strip() if i+2 < len(lines) and re.search(r"\d{4}", lines[i+2]) else ""
+            next_line = lines[i+1].strip() if i+1 < len(lines) else ""
+            next_next = lines[i+2].strip() if i+2 < len(lines) else ""
+            if re.search(r"\d{4}", next_line):
+                institute, duration = "", next_line
+            else:
+                institute, duration = next_line, next_next if re.search(r"\d{4}", next_next) else ""
             education.append({
                 "degree": degree,
                 "institute": institute,
                 "duration": duration
             })
     return education
+
+def extract_certifications(text):
+    return extract_section(text, ["certifications", "certification", "courses"], ["experience", "education"])
 
 def save_to_db(data):
     c.execute("""
@@ -189,4 +185,3 @@ if uploaded_file:
         file_name="parsed_resume.json",
         mime="application/json"
     )
-# trimmed for brevity
