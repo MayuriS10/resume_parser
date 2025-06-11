@@ -1,45 +1,36 @@
-# Resume Parser API
+# 📄 Streamlit Resume Parser
 
-This is a simple Flask-based API for parsing resumes (PDF/DOCX) and extracting structured data such as:
+This is a simple resume parser built with **Streamlit** that extracts structured information (name, contact, skills, experience, education, certifications) from uploaded resumes in PDF or DOCX format.
 
-- Name
-- Contact Info (Email & Phone)
-- Summary
-- Skills
-- Experience
-- Education
-- Certifications
+## 🚀 Features
+- Upload resumes (PDF or DOCX)
+- Extract:
+  - Name
+  - Email
+  - Phone
+  - Summary
+  - Skills
+  - Education
+  - Experience
+  - Certifications
+- Download parsed result as JSON
 
-## Features
+## 🛠️ Requirements
 
-- Upload resume via form or API
-- Parse and extract key sections using basic NLP and regex
-- Download structured JSON output
-
-## Setup Instructions
-
-1. Clone the repository
-2. Install dependencies:
+Create a virtual environment and install dependencies:
 
 ```bash
-pip install flask python-docx PyPDF2 spacy
+pip install -r requirements.txt
 python -m spacy download en_core_web_sm
 ```
 
-3. Run the Flask server:
+## ▶️ Run the app
 
 ```bash
-python app.py
+streamlit run streamlit_resume_parser.py
 ```
 
-4. Open `index.html` in browser to upload a resume.
+## 🌐 Deploy on Streamlit Cloud
 
-## Folder Structure
-
-- `app.py` – Main backend script
-- `uploads/` – Folder to save resumes and output JSONs
-- `templates/index.html` – Simple frontend for uploading
-
-## License
-
-MIT
+Push this project to GitHub, then go to [https://streamlit.io/cloud](https://streamlit.io/cloud), and deploy by selecting:
+- File: `streamlit_resume_parser.py`
