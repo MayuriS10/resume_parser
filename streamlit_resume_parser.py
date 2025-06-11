@@ -70,7 +70,7 @@ def extract_phone(text):
     match = re.search(r"(\+?\d[\d\s\-()]{9,})", text)
     return re.sub(r"[\s\-()]", "", match.group()) if match else None
 
-ddef extract_summary(text):
+def extract_summary(text):
     lines = re.split(r'\n|\r|\r\n', text)
     summary = []
     capture = False
