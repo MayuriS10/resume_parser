@@ -59,9 +59,9 @@ def extract_section(text, section_names, stop_names, max_lines=12):
 def extract_email(text):
     lines = re.split(r'\n|\r|\r\n', text)
     for line in lines:
-        match = re.search(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,}", line.strip())
+        match = re.search(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,}", line)
         if match:
-            return match.group().strip()
+            return match.group()
     return None
 
 
@@ -70,32 +70,45 @@ def extract_phone(text):
     match = re.search(r"(\+?\d[\d\s\-()]{9,})", text)
     return re.sub(r"[\s\-()]", "", match.group()) if match else None
 
-def extract_summary(text):
+ddef extract_summary(text):
     lines = re.split(r'\n|\r|\r\n', text)
     summary = []
-    for i, line in enumerate(lines):
+    capture = False
+    stop_keywords = ["skills", "experience", "education", "certification", "projects"]
+
+    for line in lines:
+        if any(k in line.lower() for k in stop_keywords):
+            if capture:
+                break
         if "summary" in line.lower() or "about" in line.lower():
-            summary.extend(lines[i+1:i+4])  # up to 3 lines
-            break
-    return " ".join([s.strip() for s in summary if s.strip()])
+            capture = True
+            continue
+        if capture:
+            if line.strip():
+                summary.append(line.strip())
+
+    return " ".join(summary)
+
     
 def extract_skills(text):
     skill_lines = extract_section(
         text,
-        section_names=["programming", "technology", "skills"],
-        stop_names=["experience", "education", "certification"],
+        section_names=["skills", "programming", "technology"],
+        stop_names=["experience", "education", "certification", "projects"],
         max_lines=20
     )
     skills = []
     for line in skill_lines:
-        line = line.strip()
-        if line.startswith("•") or re.search(r"[a-zA-Z]{3,}", line):
-            points = re.split(r"[•\-\–●]", line)
-            for point in points:
-                s = point.strip()
-                if s and not re.match(r"\d+\+", s):  # skip '3+ years'
-                    skills.append(s)
+        # Remove time durations like '3+ years:', '1 year:', etc.
+        if re.search(r"\d+\s*\+?\s*(year|yr|yrs)", line.lower()):
+            continue
+        parts = re.split(r"[•|,;–\-•\n\t]", line)
+        for part in parts:
+            part = part.strip()
+            if len(part) > 1 and not re.match(r"\d+\+?", part):
+                skills.append(part)
     return sorted(set(skills))
+
 
 
 def extract_experience(text):
