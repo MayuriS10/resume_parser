@@ -115,16 +115,30 @@ def extract_experience(text):
 
 
 def extract_education(text):
-    lines = extract_section(text, ["education"], ["experience", "skills", "certification"], max_lines=10)
+    lines = extract_section(text, ["education"], ["experience", "skills", "certification"], max_lines=15)
+
+    # Join broken lines like "INSTI" and "TUTE." → "INSTI TUTE."
+    cleaned_lines = []
+    i = 0
+    while i < len(lines):
+        if i+1 < len(lines) and not re.search(r"(Master|Bachelor|MBA|B\.?Tech|M\.?Tech|PhD|MSc|BSc)", lines[i], re.IGNORECASE):
+            merged = lines[i].strip() + " " + lines[i+1].strip()
+            cleaned_lines.append(merged)
+            i += 2
+        else:
+            cleaned_lines.append(lines[i].strip())
+            i += 1
+
     education = []
-    for i in range(len(lines) - 2):
-        if re.search(r"(MBA|B\.?Tech|M\.?Tech|BSc|MSc|Bachelor|Master|PhD)", lines[i+1], re.IGNORECASE):
+    for i in range(len(cleaned_lines) - 2):
+        if re.search(r"(Master|Bachelor|MBA|B\.?Tech|M\.?Tech|PhD|MSc|BSc)", cleaned_lines[i+1], re.IGNORECASE):
             education.append({
-                "degree": lines[i+1].strip(),
-                "institute": lines[i].strip(),
-                "duration": lines[i+2].strip() if re.search(r"\d{4}", lines[i+2]) else ""
+                "degree": cleaned_lines[i+1],
+                "institute": cleaned_lines[i],
+                "duration": cleaned_lines[i+2] if re.search(r"\d{4}", cleaned_lines[i+2]) else ""
             })
     return education
+
 
 
 def extract_certifications(text):
