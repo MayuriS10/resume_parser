@@ -57,13 +57,18 @@ def extract_section(text, section_names, stop_names, max_lines=15):
 
 # Field extractors
 def extract_email(text):
+    # First pass: scan line by line
     lines = re.split(r'\n|\r|\r\n', text)
     for line in lines:
-        line = line.strip()
-        match = re.search(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,}", line)
+        match = re.search(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,}", line.strip())
         if match:
             return match.group().strip().strip('|')
-    return None
+
+    # Fallback: remove all whitespace and recheck
+    clean_text = re.sub(r'\s+', '', text)
+    match = re.search(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,}", clean_text)
+    return match.group() if match else None
+
 
 def extract_phone(text):
     text = text.replace('\n', ' ')
