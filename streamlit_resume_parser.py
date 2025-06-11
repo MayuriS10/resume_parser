@@ -50,9 +50,10 @@ def extract_phone(text):
     match = re.search(r"(\+?\d[\d\s\-()]{9,})", clean_text)
     if match:
         number = match.group()
-        number = re.sub(r"[\\s\\-()]", "", number)  # remove spaces, dashes, parens
+        number = re.sub(r"[\s\-()]", "", number)  # CORRECTED HERE
         return number
     return None
+
 
 
 def extract_summary(text):
