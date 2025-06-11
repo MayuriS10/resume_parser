@@ -61,8 +61,9 @@ def extract_email(text):
         line = line.strip()
         match = re.search(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,}", line)
         if match:
-            return match.group()
+            return match.group().strip().strip('|')
     return None
+
 
 
 def extract_phone(text):
